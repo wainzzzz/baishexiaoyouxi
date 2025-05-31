@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: "Noto Serif TC", serif;
+      background-color: #000;
+      color: #fff;
+      overflow: hidden;
+    }
+    #start-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: url('openbackground.jpg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    #start-screen h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    }
+    #start-screen button {
+      font-size: 1.5em;
+      padding: 10px 30px;
+      background: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 200px; /* 往下移動 */
+}
+    #start-screen button:hover {
+      background: #ddd;
+    }
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-size: cover;
+      background-position: center;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px;
+      box-sizing: border-box;
+      opacity: 1;
+      transition: opacity 0.5s ease-in-out;
+    }
+    #dialogue {
+      background: rgba(0,0,0,0.6);
+      padding: 24px;
+      border-radius: 10px;
+      max-width: 900px;
+      font-size: 1.5em;
+      line-height: 1.6em;
+      position: relative;
+      z-index: 3; /* 提高層級，確保永遠在上面 */
+    }
+    .choices {
+      margin-top: 20px;
+    }
+    .choice-btn {
+      background: #fff;
+      color: #000;
+      font-size: 1em;
+      padding: 12px 24px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .choice-btn:hover {
+      background: #ddd;
+    }
+    #character {
+      position: absolute;
+      bottom: 0px;
+      right: 10%;
+      max-height: 100%;
+      opacity: 1;
+      transition: opacity 0.5s ease-in-out;
+      z-index: 1;
+    }
+    #black-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background-color: black;
+      color: white;
+      font-size: 2em;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 9;
+    }
+  </style>
+</head>
+<body>
+  <audio id="bgm" loop autoplay>
+    <source src="beijingyinyue.mp3" type="audio/mpeg">
+    您的瀏覽器不支援音樂播放。
+  </audio>
+
+  <div id="start-screen">
+    <button onclick="startGame()">開始遊戲</button>
+  </div>
+
+  <div id="black-screen">數年後……</div>
+
+  <div id="game" style="background-image: url('bg-placeholder.jpg');">
+    <img id="character" src="char-placeholder.png" alt="角色立繪">
+    <div id="dialogue">
+      <div id="text">故事開始了......</div>
+      <div class="choices" id="choices"></div>
+    </div>
+  </div>
+
+  <script>
+    const endings = {
+      he: "結局：歲月靜好",
+      be: "結局：塔下幽魂",
+      oe: "結局：水月夢中",
+      te: "結局：自在逍遙",
+      leave: "結局：緣滅塵世"
+    };
+
+    const scenes = {
+      start: {
+        text: "我是白素貞，一條修行千年的蛇妖，一直與小青——我唯一信任的夥伴一起在這裏生活。世間春秋千轉，我本已心如止水，直到那日，一個凡人倒在我門前。",
+        bg: "baisheshome.jpg",
+        char: "xuxiandaoxia.png",
+        choices: [
+          { text: "先救下再說。", next: "save" },
+          { text: "我不該插手凡人的事。", next: "leave" }
+        ]
+      },
+      save: {
+        text: "我救下他，他醒來後看著我說：『姑娘，是妳救了我嗎？我叫許仙，前幾日路過時脚下不穩墜落山坡……』",
+        bg: "baisheshome.jpg",
+        char: "xuxianganji.png",
+        choices: [
+          { text: "你可以暫時住下。", next: "feelings" },
+          { text: "你最好儘快離開。", next: "distance" }
+        ]
+      },
+      feelings: {
+        text: "我與他日久生情，但與我朝夕相處下，許仙開始經常夢見蛇影，不禁心中泛起疑惑，找我談心。",
+        bg: "woshi.jpg",
+        char: "xuxiandanxin.png",
+        choices: [
+          { text: "向他坦白自己的身份。", next: "confess" },
+          { text: "繼續隱瞞真相。", next: "suppress" }
+        ]
+      },
+      distance: {
+        text: "我明白我們身份有別，於是我始終與他保持距離，但我的目光卻仍總不自覺地追隨他的身影……",
+        bg: "woshi.jpg",
+        char: "xuxianzhanzhe.png",
+        choices: [
+          { text: "主動靠近，改變心意。", next: "feelings" },
+          { text: "遠離，保護他的凡人命運。", next: "leave" }
+        ]
+      },
+      confess: {
+        text: "我認爲相愛應該坦誠，於是我低聲對他說：『其實，我並非人類……』 許仙十分驚訝，眼裏有恐懼有糾結，卻仍有愛意。",
+        bg: "woshi.jpg",
+        char: "xuxianzhenjing.png",
+        choices: [
+          { text: "請他接受真相，一起面對。", next: "face_together" },
+          { text: "轉身離開，人終究是無法接受妖。", next: "leave_with_qing" }
+        ]
+      },
+      suppress: {
+        text: "我封住了他的夢境與記憶，打算待他身體恢復便各自離開互不打擾，但命運之輪仍然轉動……法海循著妖氣找到了我們。法海，法力强大的高僧，他口中的『降妖除魔』，真的是為了蒼生嗎？還是，只是不容我們這樣的存在……？",
+        bg: "baisheshome.jpg",
+        char: "fahaihexiaoqing.png",
+        choices: [
+          { text: "與小青聯手對抗法海。", next: "fight" },
+          { text: "求法海放過小青和許仙，自我犧牲。", next: "sacrifice" }
+        ]
+      },
+      face_together: {
+        text: "許仙握住我的手：『不論你是誰，我願與你共度此生。』 但命運之輪仍然轉動……法海循著妖氣找到了我們。法海，法力強大的高僧。他口中的『人妖殊途』，真的是為了蒼生嗎？還是，只是不容我們這樣的存在……？",
+        bg: "baisheshome.jpg",
+        char: "qianshou.png",
+        choices: [
+          { text: "與小青並肩迎戰。", next: "fight" },
+          { text: "逃亡天涯，遠離紅塵。", next: "escape" }
+        ]
+      },
+      fight: {
+        text: "金光萬丈，雷聲震天。我與小青施展法力對抗法海……",
+        bg: "dadou.jpg",
+        char: "char-placeholder.png",
+        choices: [
+          { text: "和小青一起使用必殺技。", next: "he" },
+          { text: "先和法海周旋，找出弱點。", next: "be" }
+        ]
+      },
+      escape: {
+        text: "我們遠走天涯，在人間隱姓埋名。可過往始終如影隨形，難道我們要一直這樣逃亡下去嗎？",
+        bg: "shiji.jpg",
+        char: "char-placeholder.png",
+        choices: [
+          { text: "又苦又甜的未來。", next: "oe" }
+        ]
+      },
+      sacrifice: {
+        text: "我交出修為換得小青逃走生路，許仙被法海抹去記憶帶回人間，我卻從此沉眠雷鋒塔中。",
+        bg: "jiaochuxiuwei.jpg",
+        char: "jiaochuxiuwei.png",
+        choices: [
+          { text: "夢中望見月色中的他。", next: "oe" }
+        ]
+      },
+      leave_with_qing: {
+        text: "我回頭望著許仙，轉身牽起小青的手：『我們回山中吧，自由自在。』",
+        bg: "huiwang.jpg",
+        char: "huiwangxuxian.png",
+        choices: [
+          { text: "離開塵世，自在修行。", next: "te" }
+        ]
+      },
+      he: {
+        text: "打敗法海後，我與許仙、小青三人隱居山林，開設藥館，濟世救人，歲月靜好。",
+        bg: "baisheshome.jpg",
+        char: "kaisheyiguan.png",
+        choices: [ { text: "重新開始", next: "start" } ],
+        ending: endings.he
+      },
+      be: {
+        text: "法海金缽封天，我被鎮入雷峰塔不得翻身。許仙每日塔前焚香，悔不當初。",
+        bg: "shaoxiang.jpg",
+        char: "char-placeholder.png",
+        choices: [ { text: "重新開始", next: "start" } ],
+        ending: endings.be
+      },
+      oe: {
+        text: "短暫的甜蜜過後還是逃不開命運，我被鎮壓在雷鋒塔中，夢裡總見一人立於西湖邊，與我遙遙相望。",
+        bg: "xihubian.jpg",
+        char: "xihubian.png",
+        choices: [ { text: "重新開始", next: "start" } ],
+        ending: endings.oe
+      },
+      te: {
+        text: "我與小青遠離塵囂，回歸山林，再不問紅塵是非，天地悠悠，與我無關。",
+        bg: "bg-placeholder.jpg",
+        char: "char-placeholder.png",
+        choices: [ { text: "重新開始", next: "start" } ],
+        ending: endings.te
+      },
+      leave: {
+        text: "我們終究還是有緣無份……",
+        bg: "bg-placeholder.jpg",
+        char: "char-placeholder.png",
+        choices: [ { text: "重新開始", next: "start" } ],
+        ending: endings.leave
+      }
+    };
+
+    const game = document.getElementById('game');
+    const text = document.getElementById('text');
+    const choices = document.getElementById('choices');
+    const character = document.getElementById('character');
+    const startScreen = document.getElementById('start-screen');
+    const blackScreen = document.getElementById('black-screen');
+
+    function fadeOut(element, callback) {
+      element.style.opacity = 0;
+      setTimeout(() => {
+        if (callback) callback();
+      }, 500);
+    }
+
+    function fadeIn(element) {
+      element.style.opacity = 1;
+    }
+
+    function showBlackScreen(text, duration, callback) {
+      blackScreen.innerText = text;
+      blackScreen.style.display = 'flex';
+      setTimeout(() => {
+        blackScreen.style.display = 'none';
+        if (callback) callback();
+      }, duration);
+    }
+
+    function loadScene(sceneId) {
+      const scene = scenes[sceneId];
+      fadeOut(game, () => {
+        text.innerText = scene.ending ? `${scene.ending}\n\n${scene.text}` : scene.text;
+        game.style.backgroundImage = `url('${scene.bg}')`;
+        character.style.opacity = 0;
+        setTimeout(() => {
+          character.src = scene.char;
+          character.onload = () => {
+            character.style.opacity = 1;
+          };
+        }, 100);
+        choices.innerHTML = '';
+        scene.choices.forEach(choice => {
+          const btn = document.createElement('button');
+          btn.className = 'choice-btn';
+          btn.innerText = choice.text;
+          btn.onclick = () => loadScene(choice.next);
+          choices.appendChild(btn);
+        });
+        fadeIn(game);
+      });
+    }
+
+    function startGame() {
+      const bgm = document.getElementById('bgm');
+      bgm.play();
+
+      startScreen.style.display = 'none';
+      game.style.display = 'flex';
+      loadScene('start');
+    }
+  </script>
+</body>
+</html>
